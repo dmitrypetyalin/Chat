@@ -58,7 +58,7 @@ public class ChatController implements Initializable {
         }
 
         String contact = String.valueOf(contacts.getSelectionModel().getSelectedItems());
-        if (contact.equals("[]")) {
+        if (contact.equals("[]:")) {
             contact = "Broadcast:";
         }
 
