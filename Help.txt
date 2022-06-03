@@ -1,0 +1,2 @@
+To send broadcast message just type and push the "Send\" button.
+To send personal message choose interlocutor.
