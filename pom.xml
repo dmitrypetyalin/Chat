@@ -14,26 +14,32 @@
     </modules>
 
     <properties>
-        <openjfx.version>15.0.1</openjfx.version>
+        <slf4j.version>1.7.36</slf4j.version>
+        <logback.version>1.2.11</logback.version>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
     </properties>
 
-        <dependencies>
-            <dependency>
-                <groupId>org.openjfx</groupId>
-                <artifactId>javafx-controls</artifactId>
-                <version>${openjfx.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.openjfx</groupId>
-                <artifactId>javafx-graphics</artifactId>
-                <version>${openjfx.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.openjfx</groupId>
-                <artifactId>javafx-fxml</artifactId>
-                <version>${openjfx.version}</version>
-            </dependency>
-        </dependencies>
+    <dependencies>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>${slf4j.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>log4j-over-slf4j</artifactId>
+            <version>${slf4j.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>jcl-over-slf4j</artifactId>
+            <version>${slf4j.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <version>${logback.version}</version>
+        </dependency>
+    </dependencies>
 </project>
