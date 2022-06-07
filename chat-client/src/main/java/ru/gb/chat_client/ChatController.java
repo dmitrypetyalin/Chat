@@ -58,11 +58,11 @@ public class ChatController implements Initializable {
         }
 
         String contact = String.valueOf(contacts.getSelectionModel().getSelectedItems());
-        if (contact.equals("[]:")) {
-            contact = "Broadcast:";
+        if (contact.equals("[]")) {
+            contact = "Broadcast";
         }
 
-        chatArea.appendText(contact + text.trim() + System.lineSeparator());
+        chatArea.appendText(contact + ": " + text.trim() + System.lineSeparator());
         inputField.clear();
     }
 
