@@ -1,4 +1,4 @@
-package ru.gb.chat_client;
+package ru.gb.chat.client;
 
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
@@ -22,6 +22,7 @@ public class Application extends javafx.application.Application {
         Parent parent = loader.load();
         Scene scene = new Scene(parent);
         primaryStage.setScene(scene);
+        primaryStage.setTitle("Chat");
         primaryStage.show();
     }
 }
