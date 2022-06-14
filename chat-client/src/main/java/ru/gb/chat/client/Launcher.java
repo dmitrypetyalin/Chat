@@ -1,4 +1,4 @@
-package ru.gb.chat_client;
+package ru.gb.chat.client;
 
 /**
  * 01.06.2022 10:51
