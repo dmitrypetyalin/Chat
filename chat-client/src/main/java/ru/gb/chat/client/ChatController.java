@@ -44,7 +44,7 @@ public class ChatController implements Initializable, MessageProcessor {
     @FXML
     private VBox changeNickPanel;
     @FXML
-    private PasswordField newNickField;
+    private TextField newNickField;
     @FXML
     private VBox changePasswordPanel;
     @FXML
@@ -84,7 +84,8 @@ public class ChatController implements Initializable, MessageProcessor {
             if (text == null || text.isBlank()) {
                 return;
             }
-            String recipient = parseString(String.valueOf(contacts.getSelectionModel().getSelectedItems()));
+            String selectedItem = String.valueOf(contacts.getSelectionModel().getSelectedItems());
+            String recipient = selectedItem.substring(1, selectedItem.length() - 1);
             if (recipient.equals(BROADCAST_CONTACT)) {
                 networkService.sendMessage(BROADCAST_MESSAGE.getCommand() + REGEX + text);
             } else {
@@ -94,15 +95,6 @@ public class ChatController implements Initializable, MessageProcessor {
         } catch (IOException e) {
             showError("Network error");
         }
-    }
-
-    private String parseString(String value) {
-        char chArr[] = value.toCharArray();
-        StringBuilder sb = new StringBuilder();
-        for (int i = 1; i < chArr.length - 1; i++) {
-            sb.append(chArr[i]);
-        }
-        return sb.toString();
     }
 
     private void showError(String message) {
@@ -152,14 +144,21 @@ public class ChatController implements Initializable, MessageProcessor {
             case AUTH_OK -> authOk(split);
             case ERROR_MESSAGE -> showError(split[1]);
             case LIST_USERS -> parseUsers(split);
+            case CHANGE_NICK_OK -> handleChangeNick(split[1]);
             default -> chatArea.appendText(split[1] + System.lineSeparator());
         }
+    }
+
+    private void handleChangeNick(String newNick) {
+        user = newNick;
+        returnToChat(null);
     }
 
     private void parseUsers(String[] split) {
         List<String> contact = new ArrayList<>(Arrays.asList(split));
         contact.set(0, BROADCAST_CONTACT);
         contacts.setItems(FXCollections.observableList(contact));
+        contacts.getSelectionModel().selectFirst();
     }
 
     private void authOk(String[] split) {
@@ -169,11 +168,21 @@ public class ChatController implements Initializable, MessageProcessor {
     }
 
     public void sendChangeNick(ActionEvent actionEvent) {
-        //TODO
+        String newNick = newNickField.getText();
+        if(newNick.isBlank()) {
+            return;
+        }
+        try {
+            networkService.sendMessage(CHANGE_NICK.getCommand() + REGEX + newNick);
+        } catch (IOException e) {
+            e.printStackTrace();
+            showError("Network error");
+        }
     }
 
     public void returnToChat(ActionEvent actionEvent) {
-        //TODO
+        mainPanel.setVisible(true);
+        changeNickPanel.setVisible(false);
     }
 
     public void sendChangePass(ActionEvent actionEvent) {
@@ -195,5 +204,10 @@ public class ChatController implements Initializable, MessageProcessor {
         } catch (IOException e) {
             showError("Network error");
         }
+    }
+
+    public void showChangeNickPanel(ActionEvent actionEvent) {
+        changeNickPanel.setVisible(true);
+        mainPanel.setVisible(false);
     }
 }

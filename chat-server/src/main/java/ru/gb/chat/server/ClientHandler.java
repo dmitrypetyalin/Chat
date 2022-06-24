@@ -1,6 +1,7 @@
 package ru.gb.chat.server;
 
 import ru.gb.chat.enums.Command;
+import ru.gb.chat.server.error.NickAlreadyBusyException;
 import ru.gb.chat.server.error.WrongCredentialsException;
 
 import java.io.DataInputStream;
@@ -42,11 +43,10 @@ public class ClientHandler {
             while (!Thread.currentThread().isInterrupted() && !socket.isClosed()) {
                 try {
                     String message = in.readUTF();
-                    System.out.println("Message read in ClientHandler, handle()");
                     parseMessage(message);
                 } catch (IOException e) {
                     System.out.println("Connection broken with client: " + user);
-                    server.removeHandler(this);
+                    server.removeHandler(user, this);
                 }
             }
         });
@@ -57,12 +57,21 @@ public class ClientHandler {
         String[] split = message.split(REGEX);
         Command command = Command.getByCommand(split[0]);
         switch (command) {
+            case BROADCAST_MESSAGE -> server.broadcast(user, split[1]);
             case PRIVATE_MESSAGE -> server.sendPrivateMessage(user, split[1], split[2]);
-            case BROADCAST_MESSAGE -> {
-                server.broadcast(user, split[1]);
-                System.out.println("Message from ClientHandler, parseMessage()");
-            }
+            case CHANGE_NICK -> changeNick(split[1]);
             default -> System.out.println("Unknown message" + message);
+        }
+    }
+
+    private void changeNick(String newNick) {
+        try {
+            server.getUserService().changeNick(user, newNick);
+            server.updateHandlerUserName(user, newNick);
+            user = newNick;
+            send(CHANGE_NICK_OK.getCommand() + REGEX + newNick);
+        } catch (NickAlreadyBusyException e) {
+            send(ERROR_MESSAGE.getCommand() + REGEX + "This nickname already in use");
         }
     }
 
@@ -90,7 +99,7 @@ public class ClientHandler {
                     } else {
                         this.user = nickname;
                         send(AUTH_OK.getCommand() + REGEX + nickname);
-                        server.addHandler(this);
+                        server.addHandler(nickname, this);
                         break;
                     }
                 }
@@ -103,7 +112,6 @@ public class ClientHandler {
     public void send(String message) {
         try {
             out.writeUTF(message);
-            System.out.println("Hello from ClientHandler, send()");
         } catch (IOException e) {
             e.printStackTrace();
         }

@@ -1,5 +1,7 @@
 package ru.gb.chat.server.service.Impl;
 
+import ru.gb.chat.server.error.NickAlreadyBusyException;
+import ru.gb.chat.server.error.UserNotFoundException;
 import ru.gb.chat.server.error.WrongCredentialsException;
 import ru.gb.chat.server.model.User;
 import ru.gb.chat.server.service.UserService;
@@ -48,8 +50,40 @@ public class InMemoryUserServiceImpl implements UserService {
     }
 
     @Override
-    public String changeNick(String login, String newNick) {
-        return null; //@TODO
+    public String changeNick(String oldNick, String newNick) {
+        if (isNickBusy(newNick)) {
+            throw new NickAlreadyBusyException();
+        }
+        User user = findUserByNickname(oldNick);
+        user.setNick(newNick);
+        return newNick;
+    }
+
+    private User findUserByNickname(String nickname) {
+        for (User user : users) {
+            if(user.getNick().equals(nickname)) {
+                return user;
+            }
+        }
+        throw new UserNotFoundException();
+    }
+
+    private User findUserByLogin(String login) {
+        for (User user : users) {
+            if(user.getLogin().equals(login)) {
+                return user;
+            }
+        }
+        throw new UserNotFoundException();
+    }
+
+    private boolean isNickBusy(String newNick) {
+        for (User user : users) {
+            if (user.getNick().equals(newNick)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @Override

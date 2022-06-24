@@ -1,13 +1,12 @@
 package ru.gb.chat.server;
 
+import ru.gb.chat.props.PropertyReader;
 import ru.gb.chat.server.service.UserService;
 
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Collectors;
+import java.util.*;
 
 import static ru.gb.chat.constants.MessageConstants.REGEX;
 import static ru.gb.chat.enums.Command.*;
@@ -18,17 +17,18 @@ import static ru.gb.chat.enums.Command.*;
  * @author PetSoft
  */
 public class Server {
-    private static final int PORT = 8189;
-    private List<ClientHandler> handlers;
+    private final int port;
+    private Map<String, ClientHandler> handlers;
     private UserService userService;
 
     public Server(UserService userService) {
         this.userService = userService;
-        this.handlers = new ArrayList<>();
+        this.handlers = new TreeMap<>();
+        port = PropertyReader.getInstance().getPort();
     }
 
     public void start() {
-        try (ServerSocket serverSocket = new ServerSocket(PORT)) {
+        try (ServerSocket serverSocket = new ServerSocket(port)) {
             System.out.println("Server start!");
             userService.start();
             while (true) {
@@ -47,19 +47,13 @@ public class Server {
 
     public void broadcast(String from, String message) {
         String msg = BROADCAST_MESSAGE.getCommand() + REGEX + String.format("[%s]: %s", from, message);
-        System.out.println("Message from Server, broadcastMessage()");
-        for (ClientHandler handler : handlers) {
-            handler.send(msg);
-        }
+        handlers.forEach((k, v) -> v.send(msg));
     }
 
     public void sendPrivateMessage(String from, String to, String message) {
-        String msg = PRIVATE_MESSAGE.getCommand() + REGEX + String.format("[%s]: %s", from, message);
-        for (ClientHandler handler : handlers) {
-            if(handler.getUser().equals(to) || handler.getUser().equals(from)) {
-                handler.send(msg);
-            }
-        }
+        String msg = PRIVATE_MESSAGE.getCommand() + REGEX + String.format("[%s][to %s]: %s", from, to, message);
+        handlers.get(to).send(msg);
+        handlers.get(from).send(msg);
     }
 
     public UserService getUserService() {
@@ -67,21 +61,17 @@ public class Server {
     }
 
     public synchronized boolean isUserAlreadyOnline(String nick) {
-        for (ClientHandler handler : handlers) {
-            if (handler.getUser().equals(nick)) {
-                return true;
-            }
-        }
-        return false;
+        return handlers.get(nick) != null;
+
     }
 
-    public synchronized void addHandler(ClientHandler handler) {
-        this.handlers.add(handler);
+    public synchronized void addHandler(String nick, ClientHandler handler) {
+        this.handlers.put(nick, handler);
         sendContacts();
     }
 
-    public synchronized void removeHandler(ClientHandler handler) {
-        this.handlers.remove(handler);
+    public synchronized void removeHandler(String user, ClientHandler handler) {
+        this.handlers.remove(user);
         sendContacts();
     }
 
@@ -90,12 +80,14 @@ public class Server {
     }
 
     private void sendContacts() {
-        String contacts = handlers.stream().
-                map(ClientHandler::getUser).
-                collect(Collectors.joining(REGEX));
+        String contacts = String.join(REGEX, handlers.keySet());
         String msg = LIST_USERS.getCommand() + REGEX + contacts;
-        for (ClientHandler handler : handlers) {
-            handler.send(msg);
-        }
+        handlers.forEach((k, v) -> v.send(msg));
+    }
+
+    public synchronized void updateHandlerUserName(String oldNick, String newNick) {
+        handlers.put(newNick, handlers.get(oldNick));
+        handlers.remove(oldNick);
+        sendContacts();
     }
 }
