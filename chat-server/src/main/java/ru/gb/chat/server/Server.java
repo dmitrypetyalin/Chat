@@ -61,8 +61,7 @@ public class Server {
     }
 
     public synchronized boolean isUserAlreadyOnline(String nick) {
-        return handlers.get(nick) != null;
-
+        return handlers.containsKey(nick);
     }
 
     public synchronized void addHandler(String nick, ClientHandler handler) {

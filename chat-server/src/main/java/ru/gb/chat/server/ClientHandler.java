@@ -8,6 +8,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
+import java.util.concurrent.*;
 
 import static ru.gb.chat.constants.MessageConstants.REGEX;
 import static ru.gb.chat.enums.Command.*;
@@ -31,7 +32,6 @@ public class ClientHandler {
             this.server = server;
             this.in = new DataInputStream(socket.getInputStream());
             this.out = new DataOutputStream(socket.getOutputStream());
-            System.out.println("Handler created");
         } catch (IOException e) {
             System.err.println("Connection problems with user: " + user);
         }
@@ -39,19 +39,33 @@ public class ClientHandler {
 
     public void handle() {
         handlerThread = new Thread(() -> {
-            authorize();
+            try {
+                Executors.newSingleThreadExecutor().submit(this::authorize).get(120, TimeUnit.SECONDS);
+            } catch (InterruptedException | ExecutionException | TimeoutException e) {
+                e.printStackTrace();
+                try {
+                    in.close();
+                    out.close();
+                } catch (IOException ex) {
+                    ex.printStackTrace();
+                }
+            }
+//            authorize();
             while (!Thread.currentThread().isInterrupted() && !socket.isClosed()) {
                 try {
                     String message = in.readUTF();
                     parseMessage(message);
                 } catch (IOException e) {
                     System.out.println("Connection broken with client: " + user);
-                    server.removeHandler(user, this);
+//                    if (user != null) {
+                        server.removeHandler(user, this);
+//                    }
                 }
             }
         });
         handlerThread.start();
     }
+
 
     private void parseMessage(String message) {
         String[] split = message.split(REGEX);
@@ -86,13 +100,13 @@ public class ClientHandler {
                     String nickname = null;
                     try {
                         nickname = server.getUserService().authenticate(parsed[1], parsed[2]);
+                        if (server.isUserAlreadyOnline(nickname)) {
+                            response = ERROR_MESSAGE.getCommand() + REGEX + "This client already connected";
+                            System.out.println("Already connected");
+                        }
                     } catch (WrongCredentialsException e) {
                         response = ERROR_MESSAGE.getCommand() + REGEX + e.getMessage();
                         System.out.println("Wrong credentials: " + parsed[1]);
-                    }
-                    if (server.isUserAlreadyOnline(nickname)) {
-                        response = ERROR_MESSAGE.getCommand() + REGEX + "This client already connected";
-                        System.out.println("Already connected");
                     }
                     if (!response.equals("")) {
                         send(response);
